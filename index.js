@@ -50,7 +50,7 @@ exports.handler = async function (event) {
     
     // Any message beyond this, forward to amsterdam.termors.net
     // and send DeferredResponse
-    var theToken = namespace.toLowerCase() === 'alexa.discovery' ? event.payload.scope.token : event.directive.endpoint.scope.token;
+    var theToken = namespace.toLowerCase() === 'alexa.discovery' ? event.directive.payload.scope.token : event.directive.endpoint.scope.token;
     var correlationToken = event.directive.header.correlationToken;
 
     var hippoLambdaBody = {
@@ -91,7 +91,9 @@ exports.handler = async function (event) {
 
 async function hippoHttpPostRequest(url, body, token)
 {
+    console.log("Sending POST to HippoLambda ----");
     var bodyTxt = JSON.stringify(body);
+    console.log(bodyTxt);
     
     return new Promise( (resolve, reject) =>
     {
@@ -102,17 +104,25 @@ async function hippoHttpPostRequest(url, body, token)
             headers: {
                 "Authorization": "Bearer " + token,
                 "Content-Type": "application/json",
-                "Content-Length": bodyTxt.Length
+                "Content-Length": bodyTxt.length
             }
         };
     
         var req = https.request(options, (res) => {
             console.log("Hippotronics responds ", res.statusCode);
 
-            if (200 == res.statusCode) resolve(res.statusCode); else reject("Http Error: " + res.statusCode + " " + res.statusMessage);
+            if (200 == res.statusCode) resolve(res.statusCode); else 
+            {
+                var errorMessage = "Http Error: " + res.statusCode + " " + res.statusMessage;
+                console.log(errorMessage);
+                reject(errorMessage);
+            }
         });
         
-        req.on('error', (error) => reject(error));
+        req.on('error', (error) => {
+            console.log("On Error HTTP Request: " + error);
+            reject(error)
+        });
         
         req.write(bodyTxt);
         req.end();
