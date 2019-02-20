@@ -9,6 +9,7 @@
   "author": "Maarten ter Mors",
   "license": "ISC",
   "dependencies": {
+    "body": "^5.1.0",
     "promise": "^8.0.2"
   }
 }

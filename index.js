@@ -2,8 +2,9 @@
 
 'use strict';
 
-var https = require('https');
-var Promise = require('promise');
+var https = require("https");
+var Promise = require("promise");
+var jsonBody = require("body/json");
 
 
 let AlexaResponse = require("./alexa/AlexaResponse");
@@ -61,31 +62,29 @@ exports.handler = async function (event) {
         payload: event
     };
     var response = new AlexaResponse(
-    {
-        "name": "DeferredResponse",
-        "correlationToken": correlationToken,
-        "payload": {
-            "estimatedDeferralInSeconds": 7
-        }
-    });
+        {
+            "name": "ErrorResponse",
+            "payload": {
+                "type": "INTERNAL_ERROR",
+                "message": ""
+            }
+        });        
     
     try
     {
-        await hippoHttpPostRequest("/hippoledlambda", hippoLambdaBody, theToken);
+        response = await hippoHttpPostRequest("/hippoledlambda", hippoLambdaBody, theToken);
     }
     catch (err)
     {
-        response = new AlexaResponse(
-            {
-                "name": "ErrorResponse",
-                "payload": {
-                    "type": "INTERNAL_ERROR",
-                    "message": err
-                }
-            });        
+        // Response message is already an Alexa error response
+        console.log("Error during HTTP post request to Hippotronics", err);
+        response.event.payload.message = err;
     }
 
-    return sendResponse(response.get());
+    // If response is instance of AlexaResponse, convert to string
+    if (response instanceof AlexaResponse) response = response.get();
+
+    return sendResponse(response);
 
 };
 
@@ -111,7 +110,15 @@ async function hippoHttpPostRequest(url, body, token)
         var req = https.request(options, (res) => {
             console.log("Hippotronics responds ", res.statusCode);
 
-            if (200 == res.statusCode) resolve(res.statusCode); else 
+            if (200 == res.statusCode) 
+            {
+                jsonBody(res, function (err, body)
+                {
+                    if (err) reject(err);
+                    resolve(body);
+                });
+            }
+            else 
             {
                 var errorMessage = "Http Error: " + res.statusCode + " " + res.statusMessage;
                 console.log(errorMessage);
