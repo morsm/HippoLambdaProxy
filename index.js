@@ -6,9 +6,11 @@ var https = require("https");
 var Promise = require("promise");
 var jsonBody = require("body/json");
 
-
 let AlexaResponse = require("./alexa/AlexaResponse");
 
+// MtM 14-04-2020: Made server uri configurable, not just for LED lambda anymore
+// although that's what it defaults to if the environment variable SERVER_URI isn't set
+const SERVER_URI = process.env.SERVER_URI || "/hippoledlambda";
 
 exports.handler = async function (event) {
 
@@ -72,7 +74,7 @@ exports.handler = async function (event) {
     
     try
     {
-        response = await hippoHttpPostRequest("/hippoledlambda", hippoLambdaBody, theToken);
+        response = await hippoHttpPostRequest(SERVER_URI, hippoLambdaBody, theToken);
     }
     catch (err)
     {
